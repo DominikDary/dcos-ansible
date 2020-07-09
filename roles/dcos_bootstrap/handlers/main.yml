@@ -1,0 +1,17 @@
+- name: "Same version config update: Remove old dcos_install.sh"
+  file:
+    state: absent
+    path: "{{ download_path }}/genconf/serve/dcos_install.sh"
+  listen: trigger_new_config
+
+- name: "Same version config update: Remove old upgrade.sh"
+  file:
+    path: "{{ download_path }}/genconf/serve/upgrade_from_{{ item }}/"
+    state: absent
+  when: "dcos['version'] is version('1.9', '>=')"
+  loop: >
+    {{ groups['dcos'] | default([]) | map('extract',hostvars,'ansible_local')| list |
+     select('defined') | selectattr('dcos_installation', 'defined') |
+     map(attribute='dcos_installation') | map(attribute='version') | list |
+     union([dcos['version_to_upgrade_from'] | default(dcos['version']) ]) | unique }}
+  listen: trigger_new_config
